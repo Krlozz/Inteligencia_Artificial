@@ -43,7 +43,7 @@ if __name__ == '__main__':
     colores_objetivo = colors[:4]
     print(colores_objetivo , " codigo")
     # Numero de oportunidades
-    chances = 8
+    chances = 12
  
     # Los colores a encontrar
     mostrar_colores = ['?', '?', '?', '?']
@@ -73,7 +73,8 @@ if __name__ == '__main__':
  
         # Aceptar la entrada del jugador
         try:    
-            code = list(map(int, input("Escribe la secuncia aquí = ").split()))
+            #code = list(map(int, input("Escribe la secuncia aquí = ").split())   ### forma manual
+            code = random.sample(range(1,7),4)
         except ValueError:
             clear()
             print("\tWrong choice!! Try again!!")
