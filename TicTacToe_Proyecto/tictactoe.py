@@ -6,6 +6,8 @@ import math
 import random
 from copy import deepcopy
 
+from jsonschema import ValidationError
+
 X = "X"
 O = "O"
 EMPTY = None
@@ -162,7 +164,7 @@ def result(board, action):
 
     # Verifica movimiento invalido:
     if i not in [0, 1, 2] or j not in [0, 1, 2]:
-      raise InvalidActionError(action, board, 'Result function given an invalid board position for action: ')
+      raise ValidationError(action, board, 'Result function given an invalid board position for action: ')
     elif board[i][j] != EMPTY:
       raise InvalidActionError(action, board, 'Result function tried to perform invalid action on occupaied tile: ')
 
