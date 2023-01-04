@@ -199,11 +199,11 @@ class MinesweeperAI():
         self.mark_safe(cell)
         neighbours = set()
 
-        # obyiene todos los vecinos seguros al rededor
+        # obtiene todos los vecinos seguros alrededor
         for i in range(cell[0] - 1, cell[0] + 2):
             for j in range(cell[1] - 1, cell[1] + 2):
 
-                #ifnora su propia celda
+                #ignora su propia celda
                 if (i, j) == cell:
                     continue
 
