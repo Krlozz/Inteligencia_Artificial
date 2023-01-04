@@ -166,7 +166,6 @@ while True:
     # Check for a right-click to toggle flagging
     if right == 1 and not lost:
         mouse = pygame.mouse.get_pos()
-        #print(mouse)
         for i in range(HEIGHT):
             for j in range(WIDTH):
                 if cells[i][j].collidepoint(mouse) and (i, j) not in revealed:
@@ -178,7 +177,6 @@ while True:
 
     elif left == 1:
         mouse = pygame.mouse.get_pos()
-        #print(mouse)
 
         # If AI button clicked, make an AI move
         if aiButton.collidepoint(mouse) and not lost:

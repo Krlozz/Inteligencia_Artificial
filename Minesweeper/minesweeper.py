@@ -1,3 +1,5 @@
+
+
 import itertools
 import random
 
@@ -77,10 +79,13 @@ class Minesweeper():
 
         return count
 
+
+
     def won(self):
         """
         Checks if all mines have been flagged.
         """
+
         return self.mines_found == self.mines
 
 
@@ -102,47 +107,37 @@ class Sentence():
         return f"{self.cells} = {self.count}"
 
     def known_mines(self):
-        """
-        Returns the set of all cells in self.cells known to be mines.
-        """
+        #Returns the set of all cells in self.cells known to be mines.
         if len(self.cells) == self.count:
             return self.cells
-        return None
-        #raise NotImplementedError
+        return set()
+
 
     def known_safes(self):
-        """
-        Returns the set of all cells in self.cells known to be safe.
-        """
+        #Returns the set of all cells in self.cells known to be safe.
+
         if self.count == 0:
             return self.cells
-        return None
-        #raise NotImplementedError
+        return set()
 
     def mark_mine(self, cell):
+        
+        if cell in self.cells:
+            self.cells.remove(cell)
+            self.count -= 1
+
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be a mine.
         """
-        newCells = set()
-        for item in self.cells:
-            if item != cell:
-                newCells.add(item)
-            else:
-                self.count -= 1
-        self.cells = newCells
-        #raise NotImplementedError
+
 
     def mark_safe(self, cell):
+        self.cells.discard(cell)
         """
         Updates internal knowledge representation given the fact that
         a cell is known to be safe.
         """
-        newCells = set()
-        for item in self.cells:
-            if item != cell:
-                newCells.add(item)
-        self.cells = newCells
         #raise NotImplementedError
 
 
@@ -187,9 +182,106 @@ class MinesweeperAI():
 
     def add_knowledge(self, cell, count):
         """
+                Se llama cuando el tablero del Buscaminas nos lo indica, para un determinado
+         celda segura, cuántas celdas vecinas tienen minas en ellas.
+
+         Esta función debería:
+             1) marcar la celda como un movimiento que se ha realizado
+             2) marcar la celda como segura
+             3) agregar una nueva oración a la base de conocimientos de la IA
+                basado en el valor de `cell` y `count`
+             4) marcar cualquier celda adicional como segura o como mina
+                si se puede concluir en base a la base de conocimientos de la IA
+             5) agregue cualquier oración nueva a la base de conocimiento de AI
+                si se pueden inferir del conocimiento existente
+        """
+        self.moves_made.add(cell)
+        self.mark_safe(cell)
+        neighbours = set()
+
+        # obyiene todos los vecinos seguros al rededor
+        for i in range(cell[0] - 1, cell[0] + 2):
+            for j in range(cell[1] - 1, cell[1] + 2):
+
+                #ifnora su propia celda
+                if (i, j) == cell:
+                    continue
+
+                # si las celdas son ya seguras, las ignora
+                if (i, j) in self.safes:
+                    continue
+
+                #Si se sabe que las celdas son minas, reduzca el conteo en 1 e ignórelas:
+                if (i, j) in self.mines:
+                    count = count - 1
+                    continue
+
+                # De lo contrario, agréguelos a la sentencia si están en el tablero de juego:
+                if 0 <= i < self.height and 0 <= j < self.width:
+                    neighbours.add((i, j))
+
+        print(f'Given Cell: {cell} has these neighbouring cells {neighbours} = {count}')
+        self.knowledge.append(Sentence(neighbours, count)) #Agregue los vecinos y el conteo como una oración. Luego agregue esa oración al conocimiento.
+
+
+        # Verifique la oración recién agregada para cajas fuertes y minas y márquelas en consecuencia:
+        knowledge_inferred = True
+
+        while knowledge_inferred:
+            knowledge_inferred = False
+
+            safes = set()
+            mines = set()
+
+
+            for sentence in self.knowledge:
+                safes = safes.union(sentence.known_safes())
+                mines = mines.union(sentence.known_mines())
+
+
+            if safes:
+                knowledge_changed = True
+                for safe in safes:
+                    self.mark_safe(safe)
+            if mines:
+                knowledge_changed = True
+                for mine in mines:
+                    self.mark_mine(mine)
+
+            # Elimina las oraciones vacías de la base de conocimientos:
+            empty = Sentence(set(), 0)
+
+            self.knowledge[:] = [x for x in self.knowledge if x != empty]
+
+            # Comprueba si 2 oraciones son subconjuntos entre sí
+            for sentence_1 in self.knowledge:
+                for sentence_2 in self.knowledge:
+
+                    # ignora cuando las sentencias son iguales
+                    if sentence_1.cells == sentence_2.cells:
+                        continue
+
+                    if sentence_1.cells == set() and sentence_1.count > 0:
+                        print('Error - sentence with no cells and count created')
+                        raise ValueError
+
+                    # Crea una nueva oración si 1 es un subconjunto de 2 y no en KB:
+                    if sentence_1.cells.issubset(sentence_2.cells):
+                        new_sentence_cells = sentence_2.cells - sentence_1.cells
+                        new_sentence_count = sentence_2.count - sentence_1.count
+
+                        new_sentence = Sentence(new_sentence_cells, new_sentence_count)
+
+                        # Agrega al conocimiento si aún no está en KB:
+                        if new_sentence not in self.knowledge:
+                            knowledge_changed = True
+
+                            self.knowledge.append(new_sentence)
+
+
+        """
         Called when the Minesweeper board tells us, for a given
         safe cell, how many neighboring cells have mines in them.
-
         This function should:
             1) mark the cell as a move that has been made
             2) mark the cell as safe
@@ -200,131 +292,43 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-        
-        # Marcar celda como segura y añadir a moves_made
-        self.mark_safe(cell)
-        self.moves_made.add(cell)
-
-        # Crear y añadir frases al conocimiento
-        neighbors, count = self.get_cell_neighbors(cell, count)
-        sentence = Sentence(neighbors, count)
-        self.knowledge.append(sentence)
-
-        # Conclusion
-        new_inferences = []
-        for s in self.knowledge:
-            if s == sentence:
-                continue
-            elif s.cells.issuperset(sentence.cells):
-                setDiff = s.cells-sentence.cells
-                # Recuadros conocidos
-                if s.count == sentence.count:
-                    for safeFound in setDiff:
-                        self.mark_safe(safeFound)
-                # Minas conocidas
-                elif len(setDiff) == s.count - sentence.count:
-                    for mineFound in setDiff:
-                        self.mark_mine(mineFound)
-                # Inferencia conocida
-                else:
-                    new_inferences.append(
-                        Sentence(setDiff, s.count - sentence.count)
-                    )
-            elif sentence.cells.issuperset(s.cells):
-                setDiff = sentence.cells-s.cells
-                # Recuadros conocidos
-                if s.count == sentence.count:
-                    for safeFound in setDiff:
-                        self.mark_safe(safeFound)
-                # Minas conocidas
-                elif len(setDiff) == sentence.count - s.count:
-                    for mineFound in setDiff:
-                        self.mark_mine(mineFound)
-                # Inferencia conocida
-                else:
-                    new_inferences.append(
-                        Sentence(setDiff, sentence.count - s.count)
-                    )
-
-        self.knowledge.extend(new_inferences)
-        self.remove_dups()
-        self.remove_sures()
-
         #raise NotImplementedError
 
     def make_safe_move(self):
         """
+         Devuelve una celda segura para elegir en el tablero Buscaminas.
+         Se debe saber que el movimiento es seguro, y no ya un movimiento.
+         que se ha hecho.
+
+         Esta función puede usar el conocimiento en self.mines, self.safes
+         y self.moves_made, pero no debe modificar ninguno de esos valores.
+         """
+        safe_moves = self.safes - self.moves_made
+        if safe_moves:
+
+            return random.choice(list(safe_moves))
+
+        # De lo contrario, no se pueden realizar movimientos seguros garantizados.
+        return None
+        """
         Returns a safe cell to choose on the Minesweeper board.
         The move must be known to be safe, and not already a move
         that has been made.
-
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        safeCells = self.safes - self.moves_made
-        if not safeCells:
-            return None
-        #print(f"Pool: {safeCells}")
-        move = safeCells.pop()
-        return move
-        
-        #raise NotImplementedError
+    
 
     def make_random_move(self):
         """
-        Returns a move to make on the Minesweeper board.
-        Should choose randomly among cells that:
-            1) have not already been chosen, and
-            2) are not known to be mines
-        """
-        all_moves = set()
-        for i in range(self.height):
-            for j in range(self.width):
-                if (i,j) not in self.mines and (i,j) not in self.moves_made:
-                    all_moves.add((i,j))
-        # No moves left
-        if len(all_moves) == 0:
-            return None
-        # Return available
-        move = random.choice(tuple(all_moves))
-        return move
+         Devuelve un movimiento para hacer en el tablero Buscaminas.
+         Debe elegir aleatoriamente entre celdas que:
+             1) aún no han sido elegidos, y
+             2) no se sabe que sean minas
+         """
         
-        #raise NotImplementedError
-    
-    def get_cell_neighbors(self, cell, count):
-        i, j = cell
-        neighbors = []
-
-        for row in range(i-1, i+2):
-            for col in range(j-1, j+2):
-                if (row >= 0 and row < self.height) \
-                and (col >= 0 and col < self.width) \
-                and (row, col) != cell \
-                and (row, col) not in self.safes \
-                and (row, col) not in self.mines:
-                    neighbors.append((row, col))
-                if (row, col) in self.mines:
-                    count -= 1
-
-        return neighbors, count
-
-    def remove_dups(self):
-        unique_knowledge = []
-        for s in self.knowledge:
-            if s not in unique_knowledge:
-                unique_knowledge.append(s)
-        self.knowledge = unique_knowledge
-
-    def remove_sures(self):
-        final_knowledge = []
-        for s in self.knowledge:
-            final_knowledge.append(s)
-            if s.known_mines():
-                for mineFound in s.known_mines():
-                    self.mark_mine(mineFound)
-                final_knowledge.pop(-1)
-            elif s.known_safes():
-                for safeFound in s.known_safes():
-                    self.mark_safe(safeFound)
-                final_knowledge.pop(-1)
-        self.knowledge = final_knowledge
+        all_moves = {(i, j) for i in range(0, self.height) for j in range(0, self.width)}
+        moves = all_moves - (self.mines | self.moves_made)
+        if moves:
+            return random.choice(tuple(moves))
+        return None
