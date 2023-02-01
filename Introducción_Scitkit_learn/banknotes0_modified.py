@@ -1,7 +1,7 @@
 import csv
 import random
 from sklearn import metrics
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score, roc_curve
 from sklearn.linear_model import Perceptron
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
@@ -68,9 +68,22 @@ print(f"Negative Predictive Value: {negative_predictive_value:.2f}")
 print(f"Sensitivity (Recall): {recall:.2f}")
 print(f"Specificity: {specificity:.2f}")
 
-cm = confusion_matrix(y_testing, predictions)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+cm = confusion_matrix(y_testing, predictions, labels=model.classes_)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=model.classes_)
 
 disp.plot()
-plt.show()
 
+fpr, tpr, thresholds = roc_curve(y_testing, model.predict_proba(X_testing)[:, 1], pos_label="Authentic")
+
+roc_auc = roc_auc_score(y_testing, model.predict_proba(X_testing)[:, 1], labels="Authentic")
+print(f"AUC: {roc_auc:.2f}")
+
+plt.plot(fpr, tpr, color='darkorange', label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.ylabel('1-Specificity')
+plt.xlabel('1-Sensitivity')
+plt.title(f'ROC Curve of Model {type(model).__name__}')
+plt.legend(loc="lower right")
+plt.show()
