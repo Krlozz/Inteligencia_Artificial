@@ -1,10 +1,12 @@
 import csv
 import random
 from sklearn import metrics
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.linear_model import Perceptron
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import svm
+import matplotlib.pyplot as plt
 
 # model = Perceptron()
 # model = svm.SVC()
@@ -65,3 +67,10 @@ print(f"Precision: {precision:.2f}")
 print(f"Negative Predictive Value: {negative_predictive_value:.2f}")
 print(f"Sensitivity (Recall): {recall:.2f}")
 print(f"Specificity: {specificity:.2f}")
+
+cm = confusion_matrix(y_testing, predictions)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+
+disp.plot()
+plt.show()
+
