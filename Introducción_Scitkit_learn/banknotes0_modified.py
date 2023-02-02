@@ -7,6 +7,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import svm
 import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score
 
 # model = Perceptron()
 # model = svm.SVC()
@@ -68,11 +69,20 @@ print(f"Negative Predictive Value: {negative_predictive_value:.2f}")
 print(f"Sensitivity (Recall): {recall:.2f}")
 print(f"Specificity: {specificity:.2f}")
 
+#5-fold cross validation
+accuracies = cross_val_score(model, X_training, y_training, cv=5)
+
+print(f"Accuracy for each fold: {accuracies}")
+print(f"Average accuracy: {accuracies.mean()}")
+
+# matriz de confusion
 cm = confusion_matrix(y_testing, predictions, labels=model.classes_)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=model.classes_)
 
 disp.plot()
+plt.show()
 
+# roc and auc
 fpr, tpr, thresholds = roc_curve(y_testing, model.predict_proba(X_testing)[:, 1], pos_label="Authentic")
 
 roc_auc = roc_auc_score(y_testing, model.predict_proba(X_testing)[:, 1], labels="Authentic")
