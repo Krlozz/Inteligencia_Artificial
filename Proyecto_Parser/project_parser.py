@@ -1,6 +1,8 @@
+from nltk.tree import ParentedTree
 import nltk
 import sys
 import re
+
 
 TERMINALS = """
 Adj -> "country" | "dreadful" | "enigmatical" | "little" | "moist" | "red"
@@ -87,7 +89,7 @@ def np_chunk(tree):
     chunks = []
 
     # Convert Tree to Parented Tree
-    ptree = nltk.tree.ParentedTree.convert(tree)
+    ptree = ParentedTree.fromstring(str(tree))
 
     # Iterate through all subtrees in the tree:
     for subtree in ptree.subtrees():
@@ -102,14 +104,8 @@ if __name__ == "__main__":
     main()
 
 # examples of sentences
-# Holmes sat
-# The little companion smiled and chuckled down here.
-# My armchair arrived in his dreadful mess on Thursday.
-# She had a red palm and lit the pipe before she walked home.
-# Holmes and I were in the room until he said to tell us something.
-# The enigmatical word never came before he sat in the dreadful armchair.
-# His smile was moist and his hand held the door to the room.
-# We came to the dreadful mess before the companion arrived.
-# I saw him light the pipe before he smiled at me.
-# The red paint on the wall was a little enigmatical.
-# He arrived in the dreadful mess and sat in the little armchair.
+# Holmes sat.
+# He arrived at home on Thursday.
+# Holmes chuckled.
+# The companion arrived before Thursday.
+# She lit the pipe and sat down.
