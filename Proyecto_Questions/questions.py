@@ -1,5 +1,10 @@
-import nltk
+import math
+import os
+import string
 import sys
+from collections import Counter
+
+import nltk
 
 FILE_MATCHES = 1
 SENTENCE_MATCHES = 1
@@ -9,14 +14,11 @@ def main():
 
     # Check command-line arguments
     if len(sys.argv) != 2:
-        sys.exit("Usage: python questions.py corpus")
+        sys.exit("Usage: py questions.py corpus")
 
     # Calculate IDF values across files
     files = load_files(sys.argv[1])
-    file_words = {
-        filename: tokenize(files[filename])
-        for filename in files
-    }
+    file_words = {filename: tokenize(files[filename]) for filename in files}
     file_idfs = compute_idfs(file_words)
 
     # Prompt user for query
@@ -48,29 +50,44 @@ def load_files(directory):
     Given a directory name, return a dictionary mapping the filename of each
     `.txt` file inside that directory to the file's contents as a string.
     """
-    raise NotImplementedError
+    data = dict()
+    for filename in os.listdir(directory):
+        if not filename.endswith(".txt"):
+            continue
+        with open(os.path.join(directory, filename), encoding="utf8") as f:
+            data[filename] = f.read()
+    return data
 
 
 def tokenize(document):
     """
     Given a document (represented as a string), return a list of all of the
     words in that document, in order.
-
     Process document by coverting all words to lowercase, and removing any
     punctuation or English stopwords.
     """
-    raise NotImplementedError
+    tokens = nltk.word_tokenize(document.lower())
+    punctuations = set(string.punctuation)
+    stopwords = set(nltk.corpus.stopwords.words("english"))
+
+    return list(filter(lambda t: t not in punctuations and t not in stopwords, tokens))
 
 
 def compute_idfs(documents):
     """
     Given a dictionary of `documents` that maps names of documents to a list
     of words, return a dictionary that maps words to their IDF values.
-
     Any word that appears in at least one of the documents should be in the
     resulting dictionary.
     """
-    raise NotImplementedError
+    num_doc = Counter()
+    for words in documents.values():
+        num_doc.update(set(words))
+
+    idfs = dict()
+    for word, num_doc_has_word in num_doc.items():
+        idfs[word] = math.log(len(documents) / num_doc_has_word)
+    return idfs
 
 
 def top_files(query, files, idfs, n):
@@ -80,7 +97,19 @@ def top_files(query, files, idfs, n):
     to their IDF values), return a list of the filenames of the the `n` top
     files that match the query, ranked according to tf-idf.
     """
-    raise NotImplementedError
+
+    def get_score(file):
+        """
+        Computes the score of a file by calculating the sum of tf-idf for
+        each word in query
+        """
+        score = 0
+        for word in query:
+            tf = sum(w == word for w in files[file])
+            score += tf * idfs[word]
+        return score
+
+    return sorted(files.keys(), key=lambda file: get_score(file), reverse=True)[:n]
 
 
 def top_sentences(query, sentences, idfs, n):
@@ -91,8 +120,26 @@ def top_sentences(query, sentences, idfs, n):
     the query, ranked according to idf. If there are ties, preference should
     be given to sentences that have a higher query term density.
     """
-    raise NotImplementedError
+
+    def get_score(sentence):
+        """
+        Computes the score of a sentence by calculating the sum of idfs
+        for each word in query and query term density
+        """
+        document = sentences[sentence]
+
+        idf_sum = sum(idfs[word] for word in set(query) if word in set(document))
+        term_density = sum(word in query for word in document) / len(document)
+
+        return idf_sum, term_density
+
+    return sorted(sentences.keys(), key=lambda st: get_score(st), reverse=True)[:n]
 
 
 if __name__ == "__main__":
     main()
+
+# examples
+# py questions.py corpus
+# Query: What are the types of supervised learning?
+# Types of supervised learning algorithms include Active learning , classification and regression.
