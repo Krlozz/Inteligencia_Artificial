@@ -103,6 +103,8 @@ def np_chunk(tree):
 if __name__ == "__main__":
     main()
 
+# py project_parser.py sentences/1.txt
+
 # examples of sentences
 # Holmes sat.
 # He arrived at home on Thursday.
